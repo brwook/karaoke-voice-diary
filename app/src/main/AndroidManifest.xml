@@ -4,6 +4,13 @@
     <!-- 곡 검색(iTunes Search API)에만 사용 -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- 화면이 꺼져도 노래 구간 분석 큐를 지키는 Foreground Service용 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".KonoApp"
         android:allowBackup="true"
@@ -25,6 +32,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".audio.analysis.AnalysisService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProcessing|dataSync" />
     </application>
 
 </manifest>

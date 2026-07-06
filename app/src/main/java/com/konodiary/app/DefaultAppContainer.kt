@@ -39,6 +39,7 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val songRepository: SongRepository = DefaultSongRepository(db)
 
     override val analysisController: AnalysisController = DefaultAnalysisController(
+        context = appContext,
         scope = appScope,
         recordingRepository = recordingRepository,
         audioAnalyzer = EnergyAudioAnalyzer(appContext),
@@ -56,8 +57,11 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     init {
         // A process kill mid-analysis strands rows at ANALYZING (no retry in the
-        // UI); recover them on startup. Racing a just-started analysis is harmless:
-        // its own saveAnalysisResult/FAILED transition wins afterwards.
-        appScope.launch { recordingRepository.resetStaleAnalyzing() }
+        // UI); recover them on startup, then re-enqueue everything unanalyzed —
+        // the analysis queue is in-memory and does not survive process death.
+        appScope.launch {
+            recordingRepository.resetStaleAnalyzing()
+            analysisController.enqueueAllPending()
+        }
     }
 }

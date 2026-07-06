@@ -30,6 +30,13 @@ interface AnalysisController {
 
     /** Start analyzing; a no-op if this recording is already being analyzed. */
     fun startAnalysis(recordingId: Long)
+
+    /**
+     * Enqueues every NOT_ANALYZED recording in the DB. The queue itself is
+     * in-memory and does not survive process death, so this runs at app start
+     * to pick pending work back up.
+     */
+    fun enqueueAllPending()
 }
 
 /** Plays a clipped range of an audio file. Accessed on the main thread. */

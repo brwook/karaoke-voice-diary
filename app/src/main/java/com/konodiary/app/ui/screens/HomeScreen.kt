@@ -93,7 +93,8 @@ fun HomeScreen(onOpenRecording: (Long) -> Unit) {
             val (name, duration) = withContext(Dispatchers.IO) {
                 readDisplayName(context, uri) to readDurationMs(context, uri)
             }
-            container.recordingRepository.importRecording(uri.toString(), name, duration)
+            val newId = container.recordingRepository.importRecording(uri.toString(), name, duration)
+            container.analysisController.startAnalysis(newId)
         }
     }
 
