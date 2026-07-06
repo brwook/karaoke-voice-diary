@@ -79,6 +79,30 @@ class KaraokeSegmenterTest {
     }
 
     @Test
+    fun `mostly continuous session with little quiet time still splits`() {
+        // Regression for the real 62-min sample: quiet time is only ~12% of the
+        // file, so a p20 noise floor landed on the music mode and the whole file
+        // came back as one "uniform" segment. The p10 floor must split it.
+        val curve = buildCurve(
+            40 to false,
+            240 to true,   // song 1
+            30 to false,
+            240 to true,   // song 2
+            30 to false,
+            240 to true,   // song 3 (runs to end of file)
+        )
+
+        val segments = KaraokeSegmenter.segment(curve, frameMs)
+
+        assertEquals(3, segments.size)
+        val (s1, s2, s3) = segments
+        assertTrue("s1.end=${s1.endMs}", s1.endMs in 278_000..285_000)
+        assertTrue("s2.start=${s2.startMs}", s2.startMs in 306_000..312_000)
+        assertTrue("s2.end=${s2.endMs}", s2.endMs in 548_000..555_000)
+        assertTrue("s3.start=${s3.startMs}", s3.startMs in 576_000..582_000)
+    }
+
+    @Test
     fun `uniform input returns a single whole-file segment`() {
         val curve = buildCurve(300 to true) // 5 min, all loud -> uniform
 

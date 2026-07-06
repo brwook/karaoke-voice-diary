@@ -29,6 +29,14 @@ interface RecordingDao {
 
     @Query("UPDATE recordings SET durationMs = :durationMs, analysisState = :state WHERE id = :id")
     suspend fun setDurationAndState(id: Long, durationMs: Long, state: String)
+
+    /**
+     * Analysis runs in an in-memory scope, so a process kill mid-analysis leaves
+     * rows stuck at ANALYZING forever (the UI shows an eternal spinner with no
+     * retry). Called once at app start to make them analyzable again.
+     */
+    @Query("UPDATE recordings SET analysisState = 'NOT_ANALYZED' WHERE analysisState = 'ANALYZING'")
+    suspend fun resetStaleAnalyzing()
 }
 
 @Dao

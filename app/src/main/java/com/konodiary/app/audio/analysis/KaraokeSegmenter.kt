@@ -13,7 +13,12 @@ object KaraokeSegmenter {
 
     data class Params(
         val smoothingWindowMs: Int = 2_000,
-        val noiseFloorPercentile: Double = 0.20,
+        /**
+         * Must land on the quiet mode even in mostly-singing sessions: a real
+         * 62-min recording had only ~12% quiet time, so 0.20 sat on the music
+         * mode and tripped the uniform check (whole file as one segment).
+         */
+        val noiseFloorPercentile: Double = 0.10,
         val musicPercentile: Double = 0.95,
         val thresholdFraction: Double = 0.35,
         /** If (p95 - noiseFloor) is below this, the file is treated as uniform. */

@@ -9,3 +9,6 @@
 .cxx
 local.properties
 /app/build/
+
+# 개인 녹음 샘플 (커밋 금지)
+/samples/

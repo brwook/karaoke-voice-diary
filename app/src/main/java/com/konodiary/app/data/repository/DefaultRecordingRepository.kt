@@ -76,4 +76,6 @@ class DefaultRecordingRepository(private val db: KonoDatabase) : RecordingReposi
 
     override fun observeEnvelope(recordingId: Long): Flow<Envelope?> =
         envelopeDao.observeForRecording(recordingId).map { it?.toDomain() }
+
+    override suspend fun resetStaleAnalyzing() = recordingDao.resetStaleAnalyzing()
 }

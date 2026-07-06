@@ -84,7 +84,9 @@ fun HomeScreen(onOpenRecording: (Long) -> Unit) {
         topBar = { TopAppBar(title = { Text("코노 다이어리") }) },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { importLauncher.launch(arrayOf("audio/*")) },
+                // 일부 보이스레코더는 오디오 전용 .3gp/.3ga에 video/3gpp MIME을 붙여
+                // audio/* 필터만으로는 선택이 불가능해진다.
+                onClick = { importLauncher.launch(arrayOf("audio/*", "video/3gpp")) },
                 icon = { Icon(Icons.Filled.Add, contentDescription = null) },
                 text = { Text("가져오기") },
             )

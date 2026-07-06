@@ -28,6 +28,12 @@ interface RecordingRepository {
     suspend fun saveAnalysisResult(result: AnalysisResult)
 
     fun observeEnvelope(recordingId: Long): Flow<Envelope?>
+
+    /**
+     * Recovers recordings left stuck at ANALYZING by a process kill mid-analysis,
+     * resetting them to NOT_ANALYZED. Called once at app start.
+     */
+    suspend fun resetStaleAnalyzing()
 }
 
 interface SegmentRepository {

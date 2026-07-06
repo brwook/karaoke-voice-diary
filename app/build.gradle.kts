@@ -49,6 +49,15 @@ android {
     }
 }
 
+// -PsampleDir=<로컬 WAV 디렉토리> 를 넘기면 SampleRecordingHarnessTest가
+// 실제 녹음 파일로 KaraokeSegmenter를 돌려 분할 결과 리포트를 출력한다.
+tasks.withType<Test>().configureEach {
+    systemProperty("sampleDir", providers.gradleProperty("sampleDir").getOrElse(""))
+    testLogging {
+        showStandardStreams = true
+    }
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

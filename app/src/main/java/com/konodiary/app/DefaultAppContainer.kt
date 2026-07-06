@@ -16,6 +16,7 @@ import com.konodiary.app.data.repository.DefaultSongRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /**
  * Wires concrete implementations together. Constructed once in [KonoApp.onCreate]
@@ -40,4 +41,11 @@ class DefaultAppContainer(context: Context) : AppContainer {
     )
 
     override val segmentPlayer: SegmentPlayer = ExoSegmentPlayer(appContext)
+
+    init {
+        // A process kill mid-analysis strands rows at ANALYZING (no retry in the
+        // UI); recover them on startup. Racing a just-started analysis is harmless:
+        // its own saveAnalysisResult/FAILED transition wins afterwards.
+        appScope.launch { recordingRepository.resetStaleAnalyzing() }
+    }
 }
