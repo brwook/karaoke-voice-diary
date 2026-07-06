@@ -5,6 +5,7 @@ import com.konodiary.app.audio.analysis.DefaultAnalysisController
 import com.konodiary.app.audio.analysis.EnergyAudioAnalyzer
 import com.konodiary.app.audio.player.ExoSegmentPlayer
 import com.konodiary.app.core.contracts.AnalysisController
+import com.konodiary.app.core.contracts.FolderSyncManager
 import com.konodiary.app.core.contracts.RecordingRepository
 import com.konodiary.app.core.contracts.SegmentPlayer
 import com.konodiary.app.core.contracts.SegmentRepository
@@ -15,6 +16,7 @@ import com.konodiary.app.data.repository.DefaultRecordingRepository
 import com.konodiary.app.data.repository.DefaultSegmentRepository
 import com.konodiary.app.data.repository.DefaultSongRepository
 import com.konodiary.app.data.search.ItunesSongSearchService
+import com.konodiary.app.data.sync.DefaultFolderSyncManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -45,6 +47,12 @@ class DefaultAppContainer(context: Context) : AppContainer {
     override val segmentPlayer: SegmentPlayer = ExoSegmentPlayer(appContext)
 
     override val songSearchService: SongSearchService = ItunesSongSearchService()
+
+    override val folderSyncManager: FolderSyncManager = DefaultFolderSyncManager(
+        context = appContext,
+        recordingRepository = recordingRepository,
+        analysisController = analysisController,
+    )
 
     init {
         // A process kill mid-analysis strands rows at ANALYZING (no retry in the

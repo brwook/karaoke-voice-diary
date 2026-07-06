@@ -20,16 +20,21 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,10 +44,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.konodiary.app.core.contracts.FolderSyncManager
+import com.konodiary.app.core.contracts.ScanResult
 import com.konodiary.app.core.model.AnalysisState
 import com.konodiary.app.core.model.Recording
 import com.konodiary.app.ui.common.formatDuration
+import com.konodiary.app.ui.components.FolderManageDialog
 import com.konodiary.app.ui.rememberContainer
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -55,13 +64,21 @@ fun HomeScreen(onOpenRecording: (Long) -> Unit) {
     val container = rememberContainer()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val folderSyncManager = container.folderSyncManager
 
     val recordings by container.recordingRepository.observeRecordings()
         .collectAsStateWithLifecycle(initialValue = emptyList())
     val progress by container.analysisController.progress
         .collectAsStateWithLifecycle()
+    val folders by folderSyncManager.folders
+        .collectAsStateWithLifecycle()
 
     var pendingDeleteId by remember { mutableStateOf<Long?>(null) }
+    var menuExpanded by remember { mutableStateOf(false) }
+    var showFolderManage by remember { mutableStateOf(false) }
+    // scanAndImport 중복 실행 방지 플래그.
+    val scanning = remember { mutableStateOf(false) }
 
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -80,16 +97,70 @@ fun HomeScreen(onOpenRecording: (Long) -> Unit) {
         }
     }
 
+    // 홈 진입 시 폴더가 연결되어 있으면 조용히 자동 스캔 (imported > 0일 때만 스낵바).
+    LaunchedEffect(Unit) {
+        if (folderSyncManager.folders.value.isNotEmpty()) {
+            runScan(
+                scope = scope,
+                manager = folderSyncManager,
+                scanning = scanning,
+                snackbarHostState = snackbarHostState,
+                manual = false,
+            )
+        }
+    }
+
     Scaffold(
         topBar = { TopAppBar(title = { Text("코노 다이어리") }) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                // 일부 보이스레코더는 오디오 전용 .3gp/.3ga에 video/3gpp MIME을 붙여
-                // audio/* 필터만으로는 선택이 불가능해진다.
-                onClick = { importLauncher.launch(arrayOf("audio/*", "video/3gpp")) },
-                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = { Text("가져오기") },
-            )
+            Box {
+                ExtendedFloatingActionButton(
+                    onClick = { menuExpanded = true },
+                    icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                    text = { Text("가져오기") },
+                )
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("파일 직접 선택") },
+                        onClick = {
+                            menuExpanded = false
+                            // 일부 보이스레코더는 오디오 전용 .3gp/.3ga에 video/3gpp MIME을
+                            // 붙여 audio/* 필터만으로는 선택이 불가능해진다.
+                            importLauncher.launch(arrayOf("audio/*", "video/3gpp"))
+                        },
+                    )
+                    if (folders.isNotEmpty()) {
+                        DropdownMenuItem(
+                            text = { Text("폴더 스캔") },
+                            onClick = {
+                                menuExpanded = false
+                                runScan(
+                                    scope = scope,
+                                    manager = folderSyncManager,
+                                    scanning = scanning,
+                                    snackbarHostState = snackbarHostState,
+                                    manual = true,
+                                )
+                            },
+                        )
+                    }
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                if (folders.isEmpty()) "보이스레코더 폴더 연결" else "폴더 관리",
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            showFolderManage = true
+                        },
+                    )
+                }
+            }
         },
     ) { padding ->
         if (recordings.isEmpty()) {
@@ -114,6 +185,23 @@ fun HomeScreen(onOpenRecording: (Long) -> Unit) {
         }
     }
 
+    if (showFolderManage) {
+        FolderManageDialog(
+            connectedFolders = folders,
+            onDismiss = { showFolderManage = false },
+            onConnected = {
+                // 연결 직후 다이얼로그는 유지한 채 즉시 스캔.
+                runScan(
+                    scope = scope,
+                    manager = folderSyncManager,
+                    scanning = scanning,
+                    snackbarHostState = snackbarHostState,
+                    manual = true,
+                )
+            },
+        )
+    }
+
     pendingDeleteId?.let { deleteId ->
         AlertDialog(
             onDismissRequest = { pendingDeleteId = null },
@@ -131,6 +219,41 @@ fun HomeScreen(onOpenRecording: (Long) -> Unit) {
             title = { Text("녹음 삭제") },
             text = { Text("이 녹음과 등록된 구간·곡·별점·메모가 모두 삭제됩니다. 되돌릴 수 없습니다.") },
         )
+    }
+}
+
+/**
+ * 스캔 실행 공통 함수. [scanning] 플래그로 중복 실행을 막고, 결과에 따라 스낵바를 띄운다.
+ * [manual]이 false(자동 스캔)이면 imported > 0일 때만 스낵바를 표시한다.
+ */
+private fun runScan(
+    scope: CoroutineScope,
+    manager: FolderSyncManager,
+    scanning: androidx.compose.runtime.MutableState<Boolean>,
+    snackbarHostState: SnackbarHostState,
+    manual: Boolean,
+) {
+    if (scanning.value) return
+    scanning.value = true
+    scope.launch {
+        try {
+            val result: ScanResult = manager.scanAndImport()
+            val message = when {
+                result.imported > 0 -> buildString {
+                    append("새 녹음 ${result.imported}개 가져옴 · 분석 시작")
+                    if (result.failed > 0) append(" · 실패 ${result.failed}개")
+                }
+                manual -> "새 파일 없음"
+                else -> null
+            }
+            if (message != null) snackbarHostState.showSnackbar(message)
+        } catch (t: Throwable) {
+            if (manual) {
+                snackbarHostState.showSnackbar("폴더 스캔 실패 — 연결을 다시 확인하세요")
+            }
+        } finally {
+            scanning.value = false
+        }
     }
 }
 

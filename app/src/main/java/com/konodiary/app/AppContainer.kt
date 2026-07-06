@@ -1,6 +1,7 @@
 package com.konodiary.app
 
 import com.konodiary.app.core.contracts.AnalysisController
+import com.konodiary.app.core.contracts.FolderSyncManager
 import com.konodiary.app.core.contracts.RecordingRepository
 import com.konodiary.app.core.contracts.SegmentPlayer
 import com.konodiary.app.core.contracts.SegmentRepository
@@ -15,4 +16,5 @@ interface AppContainer {
     val analysisController: AnalysisController
     val segmentPlayer: SegmentPlayer
     val songSearchService: SongSearchService
+    val folderSyncManager: FolderSyncManager
 }
