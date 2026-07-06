@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base theme is a Material3 no-action-bar shell; the real styling lives in
+         the Compose KonoDiaryTheme. This just avoids the default light action bar
+         flashing before Compose takes over. -->
+    <style name="Theme.KonoDiary" parent="android:Theme.Material.NoActionBar" />
+</resources>
