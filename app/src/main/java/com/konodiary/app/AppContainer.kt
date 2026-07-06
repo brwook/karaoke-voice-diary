@@ -5,6 +5,7 @@ import com.konodiary.app.core.contracts.RecordingRepository
 import com.konodiary.app.core.contracts.SegmentPlayer
 import com.konodiary.app.core.contracts.SegmentRepository
 import com.konodiary.app.core.contracts.SongRepository
+import com.konodiary.app.core.contracts.SongSearchService
 
 /** Manual dependency container (no DI framework — prototype). */
 interface AppContainer {
@@ -13,4 +14,5 @@ interface AppContainer {
     val songRepository: SongRepository
     val analysisController: AnalysisController
     val segmentPlayer: SegmentPlayer
+    val songSearchService: SongSearchService
 }

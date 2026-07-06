@@ -21,6 +21,7 @@ data class SongEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String,
     val artist: String,
+    val artworkUrl: String? = null,
 )
 
 @Entity(
@@ -90,6 +91,7 @@ data class SongSummaryRow(
     val id: Long,
     val title: String,
     val artist: String,
+    val artworkUrl: String?,
     val takeCount: Int,
     val bestRating: Int,
 )

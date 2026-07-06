@@ -1,6 +1,5 @@
 package com.konodiary.app.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -45,6 +44,7 @@ import com.konodiary.app.core.model.Segment
 import com.konodiary.app.core.model.Song
 import com.konodiary.app.ui.common.formatDuration
 import com.konodiary.app.ui.common.parseDuration
+import com.konodiary.app.ui.components.SongPickerDialog
 import com.konodiary.app.ui.components.Waveform
 import com.konodiary.app.ui.rememberContainer
 import androidx.compose.material3.MaterialTheme
@@ -166,18 +166,10 @@ fun RecordingDetailScreen(recordingId: Long, onBack: () -> Unit) {
     }
 
     assignFor?.let { seg ->
-        SongRegisterDialog(
-            songs = songs,
+        SongPickerDialog(
             onDismiss = { assignFor = null },
-            onPickExisting = { songId ->
+            onAssign = { songId ->
                 scope.launch { container.segmentRepository.assignSong(seg.id, songId) }
-                assignFor = null
-            },
-            onCreate = { title, artist ->
-                scope.launch {
-                    val id = container.songRepository.createSong(title, artist)
-                    container.segmentRepository.assignSong(seg.id, id)
-                }
                 assignFor = null
             },
         )
@@ -248,55 +240,6 @@ private fun StarRating(rating: Int, onRate: (Int) -> Unit) {
             }
         }
     }
-}
-
-@Composable
-private fun SongRegisterDialog(
-    songs: List<Song>,
-    onDismiss: () -> Unit,
-    onPickExisting: (Long) -> Unit,
-    onCreate: (String, String) -> Unit,
-) {
-    var title by remember { mutableStateOf("") }
-    var artist by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = { if (title.isNotBlank()) onCreate(title, artist) },
-                enabled = title.isNotBlank(),
-            ) { Text("새 곡 추가") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("취소") } },
-        title = { Text("곡 등록") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (songs.isNotEmpty()) {
-                    Text("기존 곡에서 선택")
-                    LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                        items(songs, key = { it.id }) { s ->
-                            Text(
-                                "${s.title} · ${s.artist}",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onPickExisting(s.id) }
-                                    .padding(vertical = 8.dp),
-                            )
-                        }
-                    }
-                }
-                Text("또는 새 곡 입력")
-                OutlinedTextField(
-                    value = title, onValueChange = { title = it },
-                    label = { Text("제목") }, singleLine = true,
-                )
-                OutlinedTextField(
-                    value = artist, onValueChange = { artist = it },
-                    label = { Text("가수") }, singleLine = true,
-                )
-            }
-        },
-    )
 }
 
 @Composable

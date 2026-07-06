@@ -31,10 +31,11 @@ fun RecordingEntity.toDomain(): Recording = Recording(
 
 // ---- Song ----
 
-fun SongEntity.toDomain(): Song = Song(id = id, title = title, artist = artist)
+fun SongEntity.toDomain(): Song =
+    Song(id = id, title = title, artist = artist, artworkUrl = artworkUrl)
 
 fun SongSummaryRow.toDomain(): SongSummary = SongSummary(
-    song = Song(id = id, title = title, artist = artist),
+    song = Song(id = id, title = title, artist = artist, artworkUrl = artworkUrl),
     takeCount = takeCount,
     bestRating = bestRating,
 )

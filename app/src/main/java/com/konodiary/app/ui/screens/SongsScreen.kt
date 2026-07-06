@@ -4,9 +4,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -25,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.konodiary.app.core.model.SongSummary
+import com.konodiary.app.ui.components.AlbumArtThumb
 import com.konodiary.app.ui.rememberContainer
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,6 +65,8 @@ private fun SongRow(summary: SongSummary, onClick: () -> Unit) {
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            AlbumArtThumb(summary.song.artworkUrl, size = 48.dp)
+            Spacer(Modifier.width(12.dp))
             androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
                 Text(summary.song.title, fontWeight = FontWeight.SemiBold, maxLines = 1)
                 Text("${summary.song.artist} · 테이크 ${summary.takeCount}개")

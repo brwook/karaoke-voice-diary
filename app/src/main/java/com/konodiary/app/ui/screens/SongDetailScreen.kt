@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
@@ -18,6 +20,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -36,6 +39,7 @@ import com.konodiary.app.core.model.Clip
 import com.konodiary.app.core.model.Song
 import com.konodiary.app.core.model.Take
 import com.konodiary.app.ui.common.formatDuration
+import com.konodiary.app.ui.components.AlbumArtThumb
 import com.konodiary.app.ui.rememberContainer
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,6 +77,27 @@ fun SongDetailScreen(songId: Long, onBack: () -> Unit) {
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                song?.artworkUrl?.takeIf { it.isNotBlank() }?.let { art ->
+                    item(key = "header-art") {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            AlbumArtThumb(art, size = 72.dp)
+                            Spacer(Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                song?.let {
+                                    Text(it.title, fontWeight = FontWeight.Bold, maxLines = 2)
+                                    Text(
+                                        it.artist,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
                 itemsIndexed(takes, key = { _, t -> t.segment.id }) { _, take ->
                     TakeRow(
                         take = take,

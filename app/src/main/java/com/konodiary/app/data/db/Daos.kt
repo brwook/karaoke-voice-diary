@@ -77,15 +77,29 @@ interface SongDao {
     @Query("SELECT * FROM songs WHERE id = :id")
     suspend fun getById(id: Long): SongEntity?
 
+    /** NOCASE ignores English case; Korean is unaffected. TRIM ignores stray whitespace. */
+    @Query(
+        """
+        SELECT * FROM songs
+        WHERE TRIM(title) = TRIM(:title) COLLATE NOCASE
+          AND TRIM(artist) = TRIM(:artist) COLLATE NOCASE
+        LIMIT 1
+        """
+    )
+    suspend fun findByTitleArtist(title: String, artist: String): SongEntity?
+
     @Insert
     suspend fun insert(entity: SongEntity): Long
+
+    @Query("UPDATE songs SET artworkUrl = :artworkUrl WHERE id = :id")
+    suspend fun updateArtwork(id: Long, artworkUrl: String?)
 
     @Query("DELETE FROM songs WHERE id = :id")
     suspend fun deleteById(id: Long)
 
     @Query(
         """
-        SELECT s.id AS id, s.title AS title, s.artist AS artist,
+        SELECT s.id AS id, s.title AS title, s.artist AS artist, s.artworkUrl AS artworkUrl,
                COUNT(seg.id) AS takeCount,
                COALESCE(MAX(seg.rating), 0) AS bestRating
         FROM songs s

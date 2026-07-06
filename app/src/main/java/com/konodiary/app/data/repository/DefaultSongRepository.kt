@@ -26,8 +26,22 @@ class DefaultSongRepository(private val db: KonoDatabase) : SongRepository {
     override suspend fun getSong(id: Long): Song? =
         songDao.getById(id)?.toDomain()
 
-    override suspend fun createSong(title: String, artist: String): Long =
-        songDao.insert(SongEntity(title = title.trim(), artist = artist.trim()))
+    override suspend fun createSong(title: String, artist: String, artworkUrl: String?): Long =
+        songDao.insert(
+            SongEntity(title = title.trim(), artist = artist.trim(), artworkUrl = artworkUrl),
+        )
+
+    override suspend fun findOrCreateSong(title: String, artist: String, artworkUrl: String?): Long {
+        val existing = songDao.findByTitleArtist(title.trim(), artist.trim())
+        if (existing != null) {
+            // Fill in artwork if the existing song lacks it and we now have one.
+            if (existing.artworkUrl == null && artworkUrl != null) {
+                songDao.updateArtwork(existing.id, artworkUrl)
+            }
+            return existing.id
+        }
+        return createSong(title, artist, artworkUrl)
+    }
 
     override suspend fun deleteSong(id: Long) =
         songDao.deleteById(id)

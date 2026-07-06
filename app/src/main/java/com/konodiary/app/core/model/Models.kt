@@ -34,6 +34,16 @@ data class Song(
     val id: Long,
     val title: String,
     val artist: String,
+    /** 온라인 검색(iTunes)에서 가져온 앨범아트 URL. 수동 등록이면 null. */
+    val artworkUrl: String? = null,
+)
+
+/** One row from the online song-catalog search. */
+data class SongSearchResult(
+    val title: String,
+    val artist: String,
+    val album: String?,
+    val artworkUrl: String?,
 )
 
 /** One take: a time range inside a recording, optionally tied to a song and rated. */

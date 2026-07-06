@@ -81,9 +81,12 @@ dependencies {
     implementation(libs.androidx.media3.common)
 
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.coil.compose)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    // 유닛 테스트의 android.jar 스텁에는 org.json이 비어 있어 실제 구현을 물린다
+    testImplementation(libs.org.json)
 
     debugImplementation(libs.androidx.ui.tooling)
 }

@@ -60,6 +60,14 @@ interface SongRepository {
     fun observeTakesForSong(songId: Long): Flow<List<Take>>
 
     suspend fun getSong(id: Long): Song?
-    suspend fun createSong(title: String, artist: String): Long
+    suspend fun createSong(title: String, artist: String, artworkUrl: String? = null): Long
+
+    /**
+     * Returns the id of an existing song matching title+artist (trimmed,
+     * case-insensitive) or creates one. If the existing song has no artwork and
+     * [artworkUrl] is given, the artwork is filled in.
+     */
+    suspend fun findOrCreateSong(title: String, artist: String, artworkUrl: String? = null): Long
+
     suspend fun deleteSong(id: Long)
 }
