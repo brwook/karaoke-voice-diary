@@ -12,3 +12,6 @@ local.properties
 
 # 개인 녹음 샘플 (커밋 금지)
 /samples/
+
+# AI 커버 PoC 산출물 (오디오/모델)
+/poc/
