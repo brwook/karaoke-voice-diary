@@ -1,12 +1,17 @@
 package com.konodiary.app.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.konodiary.app.core.model.Envelope
@@ -27,14 +32,24 @@ fun Waveform(
     totalDurationMs: Long = 0L,
     segmentColor: Color = color,
 ) {
+    val containerColor = MaterialTheme.colorScheme.surfaceVariant
     Canvas(
         modifier = modifier
             .fillMaxWidth()
-            .height(64.dp),
+            .height(64.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(containerColor),
     ) {
         val w = size.width
         val h = size.height
         if (w <= 0f || h <= 0f) return@Canvas
+
+        // Bars use a vertical gradient (segmentColor -> color = secondary -> primary).
+        val barBrush = Brush.verticalGradient(
+            colors = listOf(segmentColor, color),
+            startY = 0f,
+            endY = h,
+        )
 
         // Segment overlays first (behind the bars). Prefer the envelope's own span
         // if the caller could not supply a duration.
@@ -49,10 +64,18 @@ fun Waveform(
                 val endX = (seg.endMs.toFloat() / span * w).coerceIn(0f, w)
                 val rectW = (endX - startX)
                 if (rectW <= 0f) continue
+                // Translucent primary fill.
                 drawRect(
-                    color = segmentColor.copy(alpha = 0.25f),
+                    color = color.copy(alpha = 0.22f),
                     topLeft = Offset(startX, 0f),
                     size = Size(rectW, h),
+                )
+                // 2dp primary accent line along the segment top edge.
+                val lineH = 2.dp.toPx()
+                drawRect(
+                    color = color,
+                    topLeft = Offset(startX, 0f),
+                    size = Size(rectW, lineH),
                 )
             }
         }
@@ -75,7 +98,7 @@ fun Waveform(
             val barHeight = amp * h
             val x = b * step
             drawLine(
-                color = color,
+                brush = barBrush,
                 start = Offset(x, h),
                 end = Offset(x, h - barHeight),
                 strokeWidth = step.coerceAtLeast(1f),

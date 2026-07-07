@@ -9,17 +9,25 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -27,6 +35,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -41,7 +50,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.konodiary.app.core.contracts.FolderSyncManager
@@ -49,8 +60,11 @@ import com.konodiary.app.core.contracts.ScanResult
 import com.konodiary.app.core.model.AnalysisState
 import com.konodiary.app.core.model.Recording
 import com.konodiary.app.ui.common.formatDuration
-import com.konodiary.app.ui.components.FolderManageDialog
+import com.konodiary.app.ui.components.*
 import com.konodiary.app.ui.rememberContainer
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -166,13 +180,33 @@ fun HomeScreen(onOpenRecording: (Long) -> Unit) {
     ) { padding ->
         if (recordings.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("아직 가져온 녹음이 없어요.\n오른쪽 아래 버튼으로 오디오 파일을 가져오세요.")
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Filled.Mic,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                        modifier = Modifier.size(64.dp),
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        "아직 녹음이 없어요",
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "가져오기로 코노 녹음을 불러오세요",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                }
             }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(recordings, key = { it.id }) { recording ->
                     RecordingRow(
@@ -265,36 +299,76 @@ private fun RecordingRow(
     onClick: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(recording.displayName, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                Text(
-                    "${formatDuration(recording.durationMs)} · ${stateLabel(recording.analysisState)}",
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        recording.displayName,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        "${formatDate(recording.importedAt)} · ${formatDuration(recording.durationMs)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                StatusChip(
+                    text = stateChipText(recording.analysisState, progress),
+                    tone = stateChipTone(recording.analysisState),
                 )
-                if (progress != null) {
-                    LinearProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Filled.Delete,
+                        contentDescription = "삭제",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Filled.Delete, contentDescription = "삭제")
+            if (progress != null) {
+                LinearProgressIndicator(
+                    progress = { progress },
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp)),
+                )
             }
         }
     }
 }
 
-private fun stateLabel(state: AnalysisState): String = when (state) {
+private fun stateChipText(state: AnalysisState, progress: Float?): String = when (state) {
     AnalysisState.NOT_ANALYZED -> "미분석"
-    AnalysisState.ANALYZING -> "분석 중"
+    AnalysisState.ANALYZING ->
+        if (progress != null) "분석 중 ${(progress * 100).toInt()}%" else "분석 중"
     AnalysisState.ANALYZED -> "분석 완료"
     AnalysisState.FAILED -> "분석 실패"
 }
+
+private fun stateChipTone(state: AnalysisState): ChipTone = when (state) {
+    AnalysisState.NOT_ANALYZED -> ChipTone.NEUTRAL
+    AnalysisState.ANALYZING -> ChipTone.ACTIVE
+    AnalysisState.ANALYZED -> ChipTone.SUCCESS
+    AnalysisState.FAILED -> ChipTone.ERROR
+}
+
+private fun formatDate(epochMs: Long): String =
+    SimpleDateFormat("yyyy.MM.dd", Locale.getDefault()).format(Date(epochMs))
 
 private fun readDisplayName(context: android.content.Context, uri: Uri): String {
     context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)

@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#1C1B2A</color>
-    <color name="purple_500">#6650A4</color>
-    <color name="white">#FFFFFFFF</color>
-    <color name="black">#FF000000</color>
+    <!-- Neon Stage brand resources (DESIGN.md §6).
+         The adaptive launcher background is a gradient drawable; this color is a
+         solid fallback matching the gradient start. -->
+    <color name="ic_launcher_background">#7C3AED</color>
+    <!-- Splash screen background, fixed dark value (used by values-v31/themes.xml). -->
+    <color name="splash_background">#14101B</color>
 </resources>

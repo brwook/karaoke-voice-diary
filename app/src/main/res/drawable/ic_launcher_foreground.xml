@@ -1,23 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Simple microphone glyph centered in the adaptive icon safe zone. -->
-    <group>
-        <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M54,40m-11,0a11,17 0,1 1,22 0a11,17 0,1 1,-22 0" />
-        <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M52.5,66h3v9h-3z" />
-        <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M45,73h18v3h-18z" />
-        <path
-            android:strokeColor="#FFFFFF"
-            android:strokeWidth="3"
-            android:fillColor="#00000000"
-            android:pathData="M38,52a16,16 0,0 0,32 0" />
-    </group>
+    <!-- White mic glyph (capsule head + stand arc + base) with a small eighth
+         note at the top right. Simple geometry, adaptive-icon safe zone
+         (center 66x66 of 108). DESIGN.md §6. Also used as the monochrome layer. -->
+
+    <!-- Mic capsule head (centered on x=54, y 31..63) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M45,40 a9,9 0 0 1 18,0 v14 a9,9 0 0 1 -18,0 z" />
+
+    <!-- Stand arc (U-shape cradle under the head) -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M37,50 a17,17 0 0 0 34,0" />
+
+    <!-- Stand stem -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M54,65 v11" />
+
+    <!-- Base bar -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M45,78 h18" />
+
+    <!-- Eighth note, top right: notehead -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M73,42 m-4.5,0 a4.5,3.5 0 1 1 9,0 a4.5,3.5 0 1 1 -9,0 z" />
+
+    <!-- Eighth note: stem -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M75.5,25 h2.5 v17.5 h-2.5 z" />
+
+    <!-- Eighth note: flag -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M78,26 q6.5,3 5,10.5" />
 </vector>

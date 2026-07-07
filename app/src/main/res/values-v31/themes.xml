@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- API 31+: brand the system splash screen. Fixed dark "Neon Stage"
+         background (#14101B) regardless of light/dark mode — DESIGN.md §6. -->
+    <style name="Theme.KonoDiary" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+    </style>
+</resources>

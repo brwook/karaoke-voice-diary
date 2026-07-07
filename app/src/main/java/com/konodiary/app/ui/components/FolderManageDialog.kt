@@ -72,6 +72,8 @@ fun FolderManageDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.extraLarge,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         confirmButton = {},
         dismissButton = { TextButton(onClick = onDismiss) { Text("닫기") } },
         title = { Text("폴더 관리") },
@@ -127,12 +129,21 @@ fun FolderManageDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { folderPickerLauncher.launch(null) }
+                        .heightIn(min = 48.dp)
                         .padding(vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Filled.Add, contentDescription = null)
+                    Icon(
+                        Icons.Filled.Add,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
                     Spacer(Modifier.width(10.dp))
-                    Text("다른 폴더 직접 선택", fontWeight = FontWeight.Medium)
+                    Text(
+                        "다른 폴더 직접 선택",
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 }
             }
         },
@@ -192,8 +203,7 @@ private fun SectionHeaderText(text: String) {
     Text(
         text,
         style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 4.dp, bottom = 4.dp),
     )
 }
@@ -201,19 +211,27 @@ private fun SectionHeaderText(text: String) {
 @Composable
 private fun ConnectedFolderRow(displayPath: String, onDisconnect: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(Icons.Filled.Folder, contentDescription = null)
         Spacer(Modifier.width(10.dp))
         Text(
             displayPath,
+            style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(1f),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
         IconButton(onClick = onDisconnect) {
-            Icon(Icons.Filled.Close, contentDescription = "연결 해제")
+            Icon(
+                Icons.Filled.Close,
+                contentDescription = "연결 해제",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -229,6 +247,7 @@ private fun RecommendedPathRow(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (connected) Modifier else Modifier.clickable(onClick = onClick))
+            .heightIn(min = 48.dp)
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -245,7 +264,7 @@ private fun RecommendedPathRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 label,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.titleMedium,
                 color = if (connected) {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 } else {
@@ -262,11 +281,7 @@ private fun RecommendedPathRow(
         }
         if (connected) {
             Spacer(Modifier.width(8.dp))
-            Text(
-                "연결됨",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            StatusChip(text = "연결됨", tone = ChipTone.SUCCESS)
         }
     }
 }

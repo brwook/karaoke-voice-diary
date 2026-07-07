@@ -27,12 +27,12 @@ fun AlbumArtThumb(
     size: Dp,
     modifier: Modifier = Modifier,
 ) {
-    val shape = RoundedCornerShape(6.dp)
+    val shape = RoundedCornerShape(12.dp)
     Box(
         modifier = modifier
             .size(size)
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceVariant),
+            .background(MaterialTheme.colorScheme.secondaryContainer),
         contentAlignment = Alignment.Center,
     ) {
         if (!artworkUrl.isNullOrBlank()) {
@@ -46,7 +46,7 @@ fun AlbumArtThumb(
             Icon(
                 Icons.Filled.MusicNote,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.size(size * 0.5f),
             )
         }

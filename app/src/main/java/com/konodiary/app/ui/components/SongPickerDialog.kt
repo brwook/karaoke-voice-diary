@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
@@ -32,13 +33,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.konodiary.app.core.model.SongSearchResult
 import com.konodiary.app.core.model.SongSummary
 import com.konodiary.app.ui.rememberContainer
+import com.konodiary.app.ui.theme.StarGold
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -129,6 +130,8 @@ fun SongPickerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.extraLarge,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         confirmButton = {},
         dismissButton = { TextButton(onClick = onDismiss) { Text("취소") } },
         title = { Text("곡 등록") },
@@ -139,6 +142,7 @@ fun SongPickerDialog(
                     onValueChange = { query = it },
                     label = { Text("제목 · 가수 검색") },
                     singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
                     leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                     trailingIcon = {
                         if (searching) {
@@ -180,7 +184,10 @@ fun SongPickerDialog(
                             }
                         }
                         searchFailed -> item(key = "failed") {
-                            HintText("검색에 실패했어요. 네트워크를 확인하거나 아래에서 직접 입력하세요.")
+                            HintText(
+                                "검색에 실패했어요. 네트워크를 확인하거나 아래에서 직접 입력하세요.",
+                                isError = true,
+                            )
                         }
                         searched && results.isEmpty() -> item(key = "empty") {
                             HintText("검색 결과 없음")
@@ -232,19 +239,22 @@ private fun SectionHeader(text: String) {
     Text(
         text,
         style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
     )
 }
 
 @Composable
-private fun HintText(text: String) {
+private fun HintText(text: String, isError: Boolean = false) {
     Text(
         text,
         style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        color = if (isError) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
     )
 }
 
@@ -254,13 +264,19 @@ private fun MySongRow(summary: SongSummary, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
+            .heightIn(min = 48.dp)
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AlbumArtThumb(summary.song.artworkUrl, size = 44.dp)
         Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(summary.song.title, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                summary.song.title,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
             Text(
                 summary.song.artist,
                 style = MaterialTheme.typography.bodySmall,
@@ -269,16 +285,22 @@ private fun MySongRow(summary: SongSummary, onClick: () -> Unit) {
                 overflow = TextOverflow.Ellipsis,
             )
         }
+        Spacer(Modifier.width(8.dp))
         Column(horizontalAlignment = Alignment.End) {
-            Text("테이크 ${summary.takeCount}개", style = MaterialTheme.typography.bodySmall)
+            Text(
+                "테이크 ${summary.takeCount}개",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             if (summary.bestRating > 0) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Filled.Star,
                         contentDescription = null,
                         modifier = Modifier.size(14.dp),
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = StarGold,
                     )
+                    Spacer(Modifier.width(2.dp))
                     Text(summary.bestRating.toString(), style = MaterialTheme.typography.bodySmall)
                 }
             }
@@ -296,13 +318,19 @@ private fun OnlineResultRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
+            .heightIn(min = 48.dp)
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AlbumArtThumb(result.artworkUrl, size = 44.dp)
         Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(result.title, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                result.title,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
             val subtitle = if (result.album.isNullOrBlank()) {
                 result.artist
             } else {
@@ -316,10 +344,10 @@ private fun OnlineResultRow(
                 overflow = TextOverflow.Ellipsis,
             )
             if (existingTakeCount != null) {
-                Text(
-                    "등록됨 · 테이크 ${existingTakeCount}개",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                StatusChip(
+                    text = "등록됨 · 테이크 ${existingTakeCount}개",
+                    tone = ChipTone.SUCCESS,
+                    modifier = Modifier.padding(top = 4.dp),
                 )
             }
         }
@@ -339,6 +367,7 @@ private fun ManualEntryForm(
             onValueChange = { title = it },
             label = { Text("제목") },
             singleLine = true,
+            shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth(),
         )
         OutlinedTextField(
@@ -346,6 +375,7 @@ private fun ManualEntryForm(
             onValueChange = { artist = it },
             label = { Text("가수") },
             singleLine = true,
+            shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth(),
         )
         TextButton(
