@@ -18,11 +18,20 @@ import java.net.URLEncoder
 class ItunesSongSearchService : SongSearchService {
 
     override suspend fun search(query: String, limit: Int): List<SongSearchResult> =
+        searchWith(query, limit, attribute = null)
+
+    /**
+     * Runs a single iTunes search pass. When [attribute] is non-null (e.g.
+     * "songTerm") it narrows matching to that field, which is more forgiving for
+     * mixed-language / title-only queries than the default combined term search.
+     */
+    suspend fun searchWith(query: String, limit: Int, attribute: String?): List<SongSearchResult> =
         withContext(Dispatchers.IO) {
             val term = URLEncoder.encode(query, "UTF-8")
+            val attributeParam = attribute?.let { "&attribute=${URLEncoder.encode(it, "UTF-8")}" }.orEmpty()
             val url = URL(
                 "https://itunes.apple.com/search" +
-                    "?media=music&entity=song&country=KR&limit=$limit&term=$term",
+                    "?media=music&entity=song&country=KR&limit=$limit&term=$term$attributeParam",
             )
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"

@@ -15,7 +15,10 @@ import com.konodiary.app.data.db.KonoDatabase
 import com.konodiary.app.data.repository.DefaultRecordingRepository
 import com.konodiary.app.data.repository.DefaultSegmentRepository
 import com.konodiary.app.data.repository.DefaultSongRepository
+import com.konodiary.app.data.search.CompositeSongSearchService
+import com.konodiary.app.data.search.DeezerSongSearchService
 import com.konodiary.app.data.search.ItunesSongSearchService
+import com.konodiary.app.data.search.VibeSongSearchService
 import com.konodiary.app.data.sync.DefaultFolderSyncManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -47,7 +50,11 @@ class DefaultAppContainer(context: Context) : AppContainer {
 
     override val segmentPlayer: SegmentPlayer = ExoSegmentPlayer(appContext)
 
-    override val songSearchService: SongSearchService = ItunesSongSearchService()
+    override val songSearchService: SongSearchService = CompositeSongSearchService(
+        VibeSongSearchService(),
+        ItunesSongSearchService(),
+        DeezerSongSearchService(),
+    )
 
     override val folderSyncManager: FolderSyncManager = DefaultFolderSyncManager(
         context = appContext,

@@ -19,9 +19,11 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -128,6 +130,23 @@ fun SongPickerDialog(
         }
     }
 
+    // 수동 등록: 등록 직전 "제목 가수"로 재검색해 트림+소문자 (title, artist)가 입력과 일치하는
+    // 첫 결과의 아트워크를 자동 보완한다. 검색이 실패해도 등록 자체는 그대로 진행한다.
+    fun registerManual(title: String, artist: String) {
+        val t = title.trim()
+        val a = artist.trim()
+        scope.launch {
+            val wantKey = songKey(t, a)
+            val artworkUrl = runCatching {
+                container.songSearchService.search("$t $a", 5)
+                    .firstOrNull { songKey(it.title, it.artist) == wantKey }
+                    ?.artworkUrl
+            }.getOrNull()
+            val id = container.songRepository.findOrCreateSong(t, a, artworkUrl)
+            onAssign(id)
+        }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = MaterialTheme.shapes.extraLarge,
@@ -189,6 +208,13 @@ fun SongPickerDialog(
                                 isError = true,
                             )
                         }
+                        // 결과 0건 + 검색어 2자 이상: "직접 등록" 카드를 전면에 노출.
+                        searched && results.isEmpty() && trimmed.length >= 2 -> item(key = "empty-direct") {
+                            DirectRegisterCard(
+                                initialTitle = trimmed,
+                                onRegister = ::registerManual,
+                            )
+                        }
                         searched && results.isEmpty() -> item(key = "empty") {
                             HintText("검색 결과 없음")
                         }
@@ -202,26 +228,24 @@ fun SongPickerDialog(
                         }
                     }
 
-                    // 하단: 직접 입력 (오프라인 폴백, 항상 접근 가능)
-                    item(key = "manual-toggle") {
-                        TextButton(
-                            onClick = { showManualEntry = !showManualEntry },
-                            modifier = Modifier.padding(top = 4.dp),
-                        ) {
-                            Text(if (showManualEntry) "직접 입력 닫기" else "직접 입력")
+                    // 하단: 결과가 있어도 원하는 곡이 아닐 수 있다(퍼지 매칭 노이즈,
+                    // 카탈로그에 없는 곡). 항상 직접 등록으로 이어지는 출구를 둔다.
+                    if (results.isNotEmpty()) {
+                        item(key = "manual-toggle") {
+                            TextButton(
+                                onClick = { showManualEntry = !showManualEntry },
+                                modifier = Modifier.padding(top = 4.dp),
+                            ) {
+                                Text(if (showManualEntry) "직접 등록 닫기" else "찾는 곡이 없나요? 직접 등록")
+                            }
                         }
-                    }
-                    if (showManualEntry) {
-                        item(key = "manual-form") {
-                            ManualEntryForm(
-                                initialTitle = trimmed,
-                                onRegister = { title, artist ->
-                                    scope.launch {
-                                        val id = container.songRepository.findOrCreateSong(title, artist)
-                                        onAssign(id)
-                                    }
-                                },
-                            )
+                        if (showManualEntry) {
+                            item(key = "manual-form") {
+                                DirectRegisterCard(
+                                    initialTitle = trimmed,
+                                    onRegister = ::registerManual,
+                                )
+                            }
                         }
                     }
                 }
@@ -354,33 +378,62 @@ private fun OnlineResultRow(
     }
 }
 
+
+/**
+ * 검색 결과가 0건일 때 전면에 노출하는 직접 등록 카드.
+ * 제목은 검색어로 미리 채우되 수정 가능하고, 가수는 빈 값에서 시작한다.
+ * 등록 시 아트워크 자동 보완은 상위(registerManual)에서 처리한다.
+ */
 @Composable
-private fun ManualEntryForm(
+private fun DirectRegisterCard(
     initialTitle: String,
     onRegister: (String, String) -> Unit,
 ) {
     var title by remember { mutableStateOf(initialTitle) }
     var artist by remember { mutableStateOf("") }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 4.dp)) {
-        OutlinedTextField(
-            value = title,
-            onValueChange = { title = it },
-            label = { Text("제목") },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        OutlinedTextField(
-            value = artist,
-            onValueChange = { artist = it },
-            label = { Text("가수") },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        TextButton(
-            onClick = { if (title.isNotBlank()) onRegister(title.trim(), artist.trim()) },
-            enabled = title.isNotBlank(),
-        ) { Text("등록") }
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+        ) {
+            Text(
+                "검색 결과에 없는 곡인가요?",
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                "직접 등록하면 바로 배정할 수 있어요.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                label = { Text("제목") },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = artist,
+                onValueChange = { artist = it },
+                label = { Text("가수") },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            FilledTonalButton(
+                onClick = { if (title.isNotBlank()) onRegister(title, artist) },
+                enabled = title.isNotBlank(),
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("이 곡으로 등록") }
+        }
     }
 }
