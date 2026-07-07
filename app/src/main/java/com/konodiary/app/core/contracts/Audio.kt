@@ -20,9 +20,10 @@ interface AudioAnalyzer {
 
 /**
  * Orchestrates analysis runs and exposes per-recording progress.
- * Requests are processed ONE AT A TIME (device MediaCodec instances are
- * scarce and hour-long decodes are CPU-heavy); recordings waiting in the
- * queue appear in [progress] at 0f until their turn starts.
+ * Requests are queued: ONE runs at a time on battery, up to a few in
+ * parallel while the device is plugged in (hour-long decodes are CPU-heavy,
+ * and a first bulk import can queue hundreds of files). Recordings waiting
+ * in the queue appear in [progress] at 0f until their turn starts.
  */
 interface AnalysisController {
     /** recordingId -> progress (0f..1f) for currently running analyses. */

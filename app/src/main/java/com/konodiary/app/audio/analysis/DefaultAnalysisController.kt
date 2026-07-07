@@ -1,6 +1,9 @@
 package com.konodiary.app.audio.analysis
 
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.BatteryManager
 import com.konodiary.app.core.contracts.AnalysisController
 import com.konodiary.app.core.contracts.AudioAnalyzer
 import com.konodiary.app.core.contracts.RecordingRepository
@@ -9,6 +12,7 @@ import com.konodiary.app.core.model.AnalysisState
 import com.konodiary.app.core.model.Envelope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,18 +36,33 @@ class DefaultAnalysisController(
     private val queue = Channel<Long>(Channel.UNLIMITED)
 
     init {
-        scope.launch {
-            for (recordingId in queue) {
-                // Isolate per-run failures so the worker keeps draining the queue.
-                try {
-                    analyze(recordingId)
-                } catch (t: Throwable) {
-                    runCatching { recordingRepository.setAnalysisState(recordingId, AnalysisState.FAILED) }
-                } finally {
-                    removeProgress(recordingId)
+        // 워커 풀: 기본 1개, 전원이 연결되어 있으면 최대 MAX_WORKERS개 병렬.
+        // 첫 가져오기 백로그(수백 개)를 현실적인 시간 안에 소화하기 위한 것으로,
+        // 보조 워커는 충전 중에만 큐에서 꺼낸다(배터리 소모·발열 보호).
+        repeat(MAX_WORKERS) { index ->
+            scope.launch {
+                while (true) {
+                    if (index > 0 && !isPlugged()) {
+                        delay(PLUG_POLL_MS)
+                        continue
+                    }
+                    val recordingId = queue.receiveCatching().getOrNull() ?: break
+                    // Isolate per-run failures so the worker keeps draining the queue.
+                    try {
+                        analyze(recordingId)
+                    } catch (t: Throwable) {
+                        runCatching { recordingRepository.setAnalysisState(recordingId, AnalysisState.FAILED) }
+                    } finally {
+                        removeProgress(recordingId)
+                    }
                 }
             }
         }
+    }
+
+    private fun isPlugged(): Boolean {
+        val battery = appContext.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        return (battery?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0) != 0
     }
 
     override fun startAnalysis(recordingId: Long) {
@@ -102,5 +121,11 @@ class DefaultAnalysisController(
         synchronized(_progress) {
             _progress.value = _progress.value.toMutableMap().apply { remove(id) }
         }
+    }
+
+    companion object {
+        /** 전원 연결 시 동시 분석 개수 (배터리에서는 1개만). */
+        private const val MAX_WORKERS = 3
+        private const val PLUG_POLL_MS = 5_000L
     }
 }

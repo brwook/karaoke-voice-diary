@@ -11,9 +11,13 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -42,8 +46,18 @@ fun AppRoot() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    // 재생 실패(원본 삭제·권한 소실 등)는 플레이어가 상태를 리셋해 미니플레이어가
+    // 조용히 사라진다 — 사용자에게는 "눌러도 재생이 안 됨"으로 보이므로 알려준다.
+    LaunchedEffect(playerState.error) {
+        if (playerState.error != null) {
+            snackbarHostState.showSnackbar("재생할 수 없어요 · 원본 파일이 없거나 접근할 수 없습니다")
+        }
+    }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             Column {
                 MiniPlayerBar(
