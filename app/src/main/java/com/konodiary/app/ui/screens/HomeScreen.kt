@@ -208,6 +208,17 @@ fun HomeScreen(onOpenRecording: (Long) -> Unit) {
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                item(key = "analysis-dashboard") {
+                    AnalysisDashboard(
+                        recordings = recordings,
+                        progress = progress,
+                        onRetryFailed = {
+                            recordings
+                                .filter { it.analysisState == AnalysisState.FAILED }
+                                .forEach { container.analysisController.startAnalysis(it.id) }
+                        },
+                    )
+                }
                 items(recordings, key = { it.id }) { recording ->
                     RecordingRow(
                         recording = recording,
