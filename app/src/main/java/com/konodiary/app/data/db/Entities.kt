@@ -103,3 +103,10 @@ data class TakeRow(
     val recordingFileUri: String,
     val recordingImportedAt: Long,
 )
+
+/** Row for per-recording segment counts: total segments + those with a song assigned. */
+data class SegmentCountsRow(
+    val recordingId: Long,
+    val total: Int,
+    val registered: Int,
+)

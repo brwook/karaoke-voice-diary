@@ -4,6 +4,7 @@ import com.konodiary.app.core.model.AnalysisResult
 import com.konodiary.app.core.model.AnalysisState
 import com.konodiary.app.core.model.Envelope
 import com.konodiary.app.core.model.Recording
+import com.konodiary.app.core.model.RecordingSegmentCounts
 import com.konodiary.app.core.model.Segment
 import com.konodiary.app.core.model.Song
 import com.konodiary.app.core.model.SongSummary
@@ -38,6 +39,13 @@ interface RecordingRepository {
 
 interface SegmentRepository {
     fun observeSegments(recordingId: Long): Flow<List<Segment>>
+
+    /**
+     * 전 녹음의 구간 수 / 곡 배정된 구간 수 (recordingId 키).
+     * 구간이 하나도 없는 녹음은 맵에 없다.
+     */
+    fun observeCountsByRecording(): Flow<Map<Long, RecordingSegmentCounts>>
+
     suspend fun getSegment(id: Long): Segment?
 
     /** Add a user-defined MANUAL segment; returns the new id. */

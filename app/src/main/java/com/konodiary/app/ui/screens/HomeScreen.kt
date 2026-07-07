@@ -59,6 +59,7 @@ import com.konodiary.app.core.contracts.FolderSyncManager
 import com.konodiary.app.core.contracts.ScanResult
 import com.konodiary.app.core.model.AnalysisState
 import com.konodiary.app.core.model.Recording
+import com.konodiary.app.core.model.RecordingSegmentCounts
 import com.konodiary.app.ui.common.formatDuration
 import com.konodiary.app.ui.components.*
 import com.konodiary.app.ui.rememberContainer
@@ -87,6 +88,8 @@ fun HomeScreen(onOpenRecording: (Long) -> Unit) {
         .collectAsStateWithLifecycle()
     val folders by folderSyncManager.folders
         .collectAsStateWithLifecycle()
+    val segmentCounts by container.segmentRepository.observeCountsByRecording()
+        .collectAsStateWithLifecycle(initialValue = emptyMap())
 
     var pendingDeleteId by remember { mutableStateOf<Long?>(null) }
     var menuExpanded by remember { mutableStateOf(false) }
@@ -203,6 +206,12 @@ fun HomeScreen(onOpenRecording: (Long) -> Unit) {
                 }
             }
         } else {
+            // 곡 등록 완료 여부로 분리 (SPEC §7.1). 완료 = 분석 완료 + 모든 구간에 곡 배정.
+            // observeRecordings()가 이미 최신순이라 partition이 각 섹션의 정렬을 유지한다.
+            val (completed, pending) = recordings.partition { recording ->
+                recording.analysisState == AnalysisState.ANALYZED &&
+                    segmentCounts[recording.id]?.isComplete == true
+            }
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentPadding = PaddingValues(16.dp),
@@ -219,13 +228,33 @@ fun HomeScreen(onOpenRecording: (Long) -> Unit) {
                         },
                     )
                 }
-                items(recordings, key = { it.id }) { recording ->
-                    RecordingRow(
-                        recording = recording,
-                        progress = progress[recording.id],
-                        onClick = { onOpenRecording(recording.id) },
-                        onDelete = { pendingDeleteId = recording.id },
-                    )
+                if (pending.isNotEmpty()) {
+                    item(key = "header-pending") {
+                        SectionHeader("정리할 녹음 ${pending.size}")
+                    }
+                    items(pending, key = { it.id }) { recording ->
+                        RecordingRow(
+                            recording = recording,
+                            progress = progress[recording.id],
+                            counts = segmentCounts[recording.id],
+                            onClick = { onOpenRecording(recording.id) },
+                            onDelete = { pendingDeleteId = recording.id },
+                        )
+                    }
+                }
+                if (completed.isNotEmpty()) {
+                    item(key = "header-completed") {
+                        SectionHeader("정리 완료 ${completed.size}")
+                    }
+                    items(completed, key = { it.id }) { recording ->
+                        RecordingRow(
+                            recording = recording,
+                            progress = progress[recording.id],
+                            counts = segmentCounts[recording.id],
+                            onClick = { onOpenRecording(recording.id) },
+                            onDelete = { pendingDeleteId = recording.id },
+                        )
+                    }
                 }
             }
         }
@@ -304,9 +333,20 @@ private fun runScan(
 }
 
 @Composable
+private fun SectionHeader(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 8.dp),
+    )
+}
+
+@Composable
 private fun RecordingRow(
     recording: Recording,
     progress: Float?,
+    counts: RecordingSegmentCounts?,
     onClick: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -335,10 +375,19 @@ private fun RecordingRow(
                     )
                 }
                 Spacer(Modifier.width(8.dp))
-                StatusChip(
-                    text = stateChipText(recording.analysisState, progress),
-                    tone = stateChipTone(recording.analysisState),
-                )
+                // 분석 완료 카드는 곡 등록 진행도를 칩으로 표시(SPEC §7.1).
+                // 그 외 상태(미분석/분석 중/실패)는 기존 상태 칩 그대로.
+                if (recording.analysisState == AnalysisState.ANALYZED) {
+                    StatusChip(
+                        text = songChipText(counts),
+                        tone = songChipTone(counts),
+                    )
+                } else {
+                    StatusChip(
+                        text = stateChipText(recording.analysisState, progress),
+                        tone = stateChipTone(recording.analysisState),
+                    )
+                }
                 IconButton(onClick = onDelete) {
                     Icon(
                         Icons.Filled.Delete,
@@ -377,6 +426,19 @@ private fun stateChipTone(state: AnalysisState): ChipTone = when (state) {
     AnalysisState.ANALYZED -> ChipTone.SUCCESS
     AnalysisState.FAILED -> ChipTone.ERROR
 }
+
+/**
+ * 분석 완료 카드의 곡 등록 진행도 칩 텍스트 (SPEC §7.1).
+ * 구간 0개(counts에 없음) → "구간 없음", 전부 등록 → "곡 M", 미완 → "곡 N/M".
+ */
+private fun songChipText(counts: RecordingSegmentCounts?): String = when {
+    counts == null || counts.total == 0 -> "구간 없음"
+    counts.isComplete -> "곡 ${counts.total}"
+    else -> "곡 ${counts.registered}/${counts.total}"
+}
+
+private fun songChipTone(counts: RecordingSegmentCounts?): ChipTone =
+    if (counts != null && counts.isComplete) ChipTone.SUCCESS else ChipTone.NEUTRAL
 
 private fun formatDate(epochMs: Long): String =
     SimpleDateFormat("yyyy.MM.dd", Locale.getDefault()).format(Date(epochMs))

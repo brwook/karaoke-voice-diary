@@ -29,6 +29,15 @@ data class Recording(
     val analysisState: AnalysisState,
 )
 
+/** 녹음별 구간 수와 곡이 배정된 구간 수 (홈 목록의 곡 등록 진행도/분리 표시용). */
+data class RecordingSegmentCounts(
+    val recordingId: Long,
+    val total: Int,
+    val registered: Int,
+) {
+    val isComplete: Boolean get() = total > 0 && registered == total
+}
+
 /** A song the user registers and attaches takes to. */
 data class Song(
     val id: Long,

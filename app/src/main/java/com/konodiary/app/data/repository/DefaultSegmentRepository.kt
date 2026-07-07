@@ -1,6 +1,7 @@
 package com.konodiary.app.data.repository
 
 import com.konodiary.app.core.contracts.SegmentRepository
+import com.konodiary.app.core.model.RecordingSegmentCounts
 import com.konodiary.app.core.model.Segment
 import com.konodiary.app.data.db.KonoDatabase
 import com.konodiary.app.data.db.SegmentEntity
@@ -14,6 +15,17 @@ class DefaultSegmentRepository(private val db: KonoDatabase) : SegmentRepository
 
     override fun observeSegments(recordingId: Long): Flow<List<Segment>> =
         segmentDao.observeForRecording(recordingId).map { list -> list.map { it.toDomain() } }
+
+    override fun observeCountsByRecording(): Flow<Map<Long, RecordingSegmentCounts>> =
+        segmentDao.observeCountsByRecording().map { rows ->
+            rows.associate { row ->
+                row.recordingId to RecordingSegmentCounts(
+                    recordingId = row.recordingId,
+                    total = row.total,
+                    registered = row.registered,
+                )
+            }
+        }
 
     override suspend fun getSegment(id: Long): Segment? =
         segmentDao.getById(id)?.toDomain()

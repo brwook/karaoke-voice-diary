@@ -44,6 +44,16 @@ interface SegmentDao {
     @Query("SELECT * FROM segments WHERE recordingId = :recordingId ORDER BY startMs ASC")
     fun observeForRecording(recordingId: Long): Flow<List<SegmentEntity>>
 
+    /** Per-recording segment totals + how many have a song assigned. */
+    @Query(
+        """
+        SELECT recordingId, COUNT(id) AS total,
+               SUM(CASE WHEN songId IS NOT NULL THEN 1 ELSE 0 END) AS registered
+        FROM segments GROUP BY recordingId
+        """
+    )
+    fun observeCountsByRecording(): Flow<List<SegmentCountsRow>>
+
     @Query("SELECT * FROM segments WHERE id = :id")
     suspend fun getById(id: Long): SegmentEntity?
 
